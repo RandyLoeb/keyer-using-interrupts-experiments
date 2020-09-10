@@ -16,8 +16,8 @@ ESP32_ISR_Timer ISR_Timer;
 // this might be too low? 50 and 25 were too high for 20wpm
 #define HW_TIMER_INTERVAL_MS 1
 
-//#define ditpin GPIO_NUM_2
-//#define dahpin GPIO_NUM_5
+#define ditpin GPIO_NUM_2
+#define dahpin GPIO_NUM_5
 
 // queue to hold dits and dahs seen by the paddle monitorning,
 // sound loop will pull from here
@@ -32,11 +32,9 @@ void IRAM_ATTR TimerHandler(void)
   ISR_Timer.run();
 }
 
-#include "paddleHander.h"
-PaddleHandler paddleHandler(&ISR_Timer, &ditsNdahQueue);
 // timers kick off these two funcs below.
 // has debugging to see if we are dead nuts accurate
-/* void IRAM_ATTR doDits()
+void IRAM_ATTR doDits()
 {
   static unsigned long previousMillis = lastMillis;
   unsigned long deltaMillis = millis() - previousMillis;
@@ -152,10 +150,6 @@ void IRAM_ATTR unlockDah()
 {
   unlockDebouncer(detectDahPress, &dahLocked);
 }
- */
-
-volatile int toneSilenceTimer;
-volatile int ditDahSpaceLockTimer;
 
 // fired by timer that ends a sidetone segment
 void IRAM_ATTR silenceTone()
@@ -182,7 +176,7 @@ void setup()
   Serial.begin(115200);
   Serial.println("In setup()");
   // put your setup code here, to run once:
-  /* pinMode(ditpin, INPUT_PULLUP);
+  pinMode(ditpin, INPUT_PULLUP);
   pinMode(dahpin, INPUT_PULLUP);
 
   //seems like pin can only have one interrupt attached
@@ -190,7 +184,7 @@ void setup()
   //attachInterrupt(digitalPinToInterrupt(GPIO_NUM_39), detectDitRelease, RISING);
 
   attachInterrupt(digitalPinToInterrupt(dahpin), detectDahPress, CHANGE);
- */
+
   // Using ESP32  => 80 / 160 / 240MHz CPU clock ,
   // For 64-bit timer counter
   // For 16-bit timer prescaler up to 1024
@@ -206,7 +200,7 @@ void setup()
 
   // Just to demonstrate, don't use too many ISR Timers if not absolutely necessary
 
-  /* // this timer monitors the dit paddle held down
+  // this timer monitors the dit paddle held down
   ditTimer = ISR_Timer.setInterval(121L, doDits);
 
   // this timer monitors the dah paddle held down
@@ -214,7 +208,7 @@ void setup()
 
   // debouncers, needs some tweaking
   debounceDitTimer = ISR_Timer.setInterval(1L, unlockDit);
-  debounceDahTimer = ISR_Timer.setInterval(10L, unlockDah); */
+  debounceDahTimer = ISR_Timer.setInterval(10L, unlockDah);
 
   // timer to silence tone (could be used to unkey transmitter)
   toneSilenceTimer = ISR_Timer.setInterval(60L, silenceTone);
@@ -223,24 +217,22 @@ void setup()
   ditDahSpaceLockTimer = ISR_Timer.setInterval(60L, releaseLockForDitDahSpace);
 
   // not sure if disabled by default by do it
-  /* ISR_Timer.disable(ditTimer);
+  ISR_Timer.disable(ditTimer);
   ISR_Timer.disable(dahTimer);
   ISR_Timer.disable(debounceDitTimer);
-  ISR_Timer.disable(debounceDahTimer); */
+  ISR_Timer.disable(debounceDahTimer);
   ISR_Timer.disable(toneSilenceTimer);
   ISR_Timer.disable(ditDahSpaceLockTimer);
 
   // turn on the speaker
   M5.Speaker.begin();
-
-  paddleHandler.initialize();
 }
 
 void loop()
 {
   // wait until now to enable interrupts, things should be
   // initialized
-  paddleHandler.detectInterrupts = true;
+  detectInterrupts = true;
 
   while (!ditsNdahQueue.empty())
   {
